@@ -1,0 +1,27 @@
+{
+  "Meta": {
+    "title": "Pregúntale a tu tienda. Respuestas exactas.",
+    "description": "Conecta tu tienda de Shopify y pregúntale a tus ventas en lenguaje natural. Números exactos, gráficos reales, cero alucinaciones."
+  },
+  "Nav": {
+    "demo": "Demo",
+    "pricing": "Precios",
+    "signIn": "Entrar",
+    "getStarted": "Empezar"
+  },
+  "Home": {
+    "eyebrow": "Analytics de ecommerce, conversacional",
+    "title": "Conecta tu tienda. Pregúntale a tus ventas.",
+    "subtitle": "Respuestas exactas, no aproximaciones. Cada número sale de una consulta real contra tus propios datos — nunca de una suposición.",
+    "ctaPrimary": "Probar la demo",
+    "ctaSecondary": "Ver precios",
+    "status": "Fase 0 — fundaciones listas. El pipeline de chat llega en la Fase 1."
+  },
+  "Common": {
+    "loading": "Cargando…",
+    "error": "Algo ha salido mal",
+    "retry": "Reintentar",
+    "language": "Idioma",
+    "theme": "Tema"
+  }
+}

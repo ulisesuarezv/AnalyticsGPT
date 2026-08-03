@@ -1,0 +1,27 @@
+{
+  "Meta": {
+    "title": "Ask your store. Get exact answers.",
+    "description": "Connect your Shopify store and ask your sales data in plain language. Exact numbers, real charts, zero hallucinations."
+  },
+  "Nav": {
+    "demo": "Demo",
+    "pricing": "Pricing",
+    "signIn": "Sign in",
+    "getStarted": "Get started"
+  },
+  "Home": {
+    "eyebrow": "Ecommerce analytics, conversational",
+    "title": "Connect your store. Ask your sales.",
+    "subtitle": "Exact answers, not approximations. Every number comes from a real query against your own data — never from a guess.",
+    "ctaPrimary": "Try the demo",
+    "ctaSecondary": "See pricing",
+    "status": "Phase 0 — foundations in place. The chat pipeline lands in Phase 1."
+  },
+  "Common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "language": "Language",
+    "theme": "Theme"
+  }
+}
