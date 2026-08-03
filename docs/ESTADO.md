@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 4 agosto 2026 · sesión PM
-**Fase actual:** 0 completada → **siguiente: Fase 1**
+**Fase actual:** **Fase 1 en curso, pausada a mitad** — ver "Dónde se retoma"
 
 Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesión siguiente.
 
@@ -12,7 +12,7 @@ Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesió
 | Fase | Estado | Notas |
 |---|---|---|
 | 0 · Fundaciones | ✅ Completada | Build y lint limpios, `/es` y `/en` sirviendo |
-| 1 · Motor de queries | ⬜ **Siguiente** | Sin bloqueos: hay Supabase y OpenAI |
+| 1 · Motor de queries | 🟡 **En curso, pausada** | ~30% hecho. Bloqueada por credenciales (B2) |
 | 2 · Chat + `/demo` | ⬜ | **HITO 1** — revisión del usuario obligatoria |
 | 3 · Auth + multi-tenant | ⬜ | |
 | 4 · CSV upload | ⬜ | |
@@ -21,10 +21,40 @@ Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesió
 | 7 · Shopify | 🔒 **Bloqueada** | Falta Shopify Partners + dev store |
 | 8 · Hardening | ⬜ | |
 
+## Dónde se retoma la Fase 1
+
+Pausada el 4 agosto 2026. Lee `docs/fases/fase-1-motor-queries.md` para el alcance completo; esto es
+solo el punto de corte.
+
+**Hecho y verificado:**
+
+- `supabase/migrations/001_schema.sql` — tablas de `PRODUCTO.md` §8 (reordenadas para que las FK
+  compilen), índices, RLS + policies, las 5 vistas `security_barrier`, el rol `query_runner`, y los
+  `COMMENT ON` que alimentarán el catálogo del LLM.
+  ⚠️ **Escrito pero nunca aplicado contra la base.** Sigue sin validar contra Postgres real
+- `src/lib/sql/guard.js` + `tests/guard.test.js` — **42/42 en verde** (`npm test`)
+- `package.json` pasa a ESM (`"type": "module"`); scripts `test`, `eval`, `db:migrate`, `db:seed`
+  declarados. Dependencias instaladas: `ai` v7, `@ai-sdk/openai`, `zod`, `postgres`, `@duckdb/node-api`,
+  `dotenv`
+
+**Falta (todo el resto del brief):**
+
+- `scripts/apply-migrations.js`, `scripts/seed-demo.js`, `scripts/eval.js` — los tres están declarados
+  en `package.json` pero **no existen**; el directorio `scripts/` está sin crear
+- Aplicar la migración y validar que compila de verdad
+- Dataset demo + export a `public/demo-data/sample-ecommerce.csv` + `docs/eval/dataset.md`
+- `src/lib/db/` (`runScopedQuery`), `src/lib/sql/catalog.js`, `src/lib/duckdb/`, `src/lib/llm/`
+- `POST /api/query`
+- `docs/eval/preguntas.json` y `ataques.json`, y la ejecución real del eval
+
+**Nit:** `npx eslint .` da 2 warnings en `guard.js` (directivas `eslint-disable` sin uso, líneas 242 y
+300). `npm run lint` limpio es criterio de aceptación de la fase — se arregla con `--fix`.
+
 ## Bloqueos
 
 | # | Bloqueo | Impide | Cómo se desbloquea |
 |---|---|---|---|
+| B2 | **Sin `.env.local`** | Continuar la Fase 1 | Ver "Credenciales" |
 | B1 | Sin cuenta de Shopify Partners ni dev store | Fase 7 completa | Crear cuenta en partners.shopify.com, generar una development store con datos de prueba de varios meses, crear la app y obtener client id/secret |
 
 Ninguna otra fase depende de B1. Las Fases 1-6 y 8 pueden completarse sin Shopify.
@@ -40,9 +70,20 @@ Ninguna otra fase depende de B1. Las Fases 1-6 y 8 pueden completarse sin Shopif
 | Google OAuth (en Supabase) | ⚠️ por confirmar | Fase 3 |
 | Shopify Partners | ❌ | Fase 7 |
 
-Al empezar la Fase 1 hay que rellenar `.env.local` a partir de `.env.local.example`. Falta obtener el
-`DATABASE_URL_READONLY`: es la connection string directa de Supabase, pero con el rol `query_runner`
-que crea la propia Fase 1 — así que en esa fase se crea el rol primero y se compone la URL después.
+**El repo no tiene `.env.local`** (solo `.env.local.example`). Es el bloqueo B2. Para retomar la Fase 1
+hay que pedirle al usuario estas cinco cosas:
+
+1. `NEXT_PUBLIC_SUPABASE_URL`
+2. `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. `SUPABASE_SERVICE_ROLE_KEY`
+4. `OPENAI_API_KEY`
+5. La connection string de Postgres **con rol admin** — Supabase Dashboard → Connect → *Session
+   pooler*, formato `postgresql://postgres.<ref>:<password>@aws-….pooler.supabase.com:5432/postgres`
+
+`DATABASE_URL_READONLY` **no se pide**: se compone dentro de la Fase 1 tras crear el rol
+`query_runner`, generando su contraseña en el momento. La migración crea el rol a propósito sin
+contraseña, y `scripts/apply-migrations.js` se la fija por parámetro bindeado, para que nunca acabe
+interpolada en un fichero versionado.
 
 ## Decisiones tomadas
 
