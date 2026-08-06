@@ -13,7 +13,7 @@ Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesió
 |---|---|---|
 | 0 · Fundaciones | ✅ Completada | Build y lint limpios, `/es` y `/en` sirviendo |
 | 1 · Motor de queries | ✅ Completada | Eval 95%, ataques 100%, 5/5 verificadas a mano |
-| 2 · Chat + `/demo` | 🟡 Entregada | **HITO 1** — código completo y verificado en local; falta la revisión del usuario y las env vars del deploy |
+| 2 · Chat + `/demo` | 🟡 Entregada | **HITO 1** — demo publicada y verificada en el deploy; falta la revisión del usuario |
 | 3 · Auth + multi-tenant | ⬜ | |
 | 4 · CSV upload | ⬜ | |
 | 5 · Billing | ⬜ | |
@@ -55,42 +55,42 @@ de layout en cada pregunta que en móvil se nota mucho.
 `historySummary` se compone en cliente (`src/lib/chat/history.js`) con los 3 últimos turnos,
 incluyendo el SQL de cada uno: es el contexto más preciso que existe sobre qué se midió antes.
 
-### Deploy — qué falta para que el link funcione
+### Deploy
 
-La rama `fase-2-chat-demo` está en `origin` y Vercel ya ha construido su preview con éxito:
+La demo está publicada desde la rama `fase-2-chat-demo` (`main` sigue en la Fase 1, a la espera de
+la revisión):
 
 ```
-https://analytics-1ujwkb5mg-ulisesuarezvs-projects.vercel.app
+https://analytics-axde2vm89-ulisesuarezvs-projects.vercel.app/es/demo
 ```
 
-**Ese link todavía no sirve para enseñar la demo**, por dos cosas que dependen de la cuenta de
-Vercel, no del código:
+Verificado sobre esa URL en móvil (390 px): SQL a 6,1 s, tabla a 6,6 s, prosa a 7,3 s, gráfico a
+11,3 s — más lento que en local por arranque en frío y red, pero **el orden se mantiene** y el dato
+real sigue apareciendo mucho antes que la prosa. Cinco barras, cinco filas, CSV y PNG presentes, sin
+scroll horizontal.
 
-1. **Deployment Protection está activo en los previews.** El deployment responde 302 a
-   `vercel.com/sso-api`: alguien ajeno al proyecto ve una pantalla de login, no la demo. Se desactiva
-   en Settings → Deployment Protection
-2. **Faltan las env vars en el proyecto de Vercel.** Producción responde `INTERNAL` 500 a cualquier
-   pregunta, que es exactamente lo que pasa sin base ni clave de LLM. Hay que añadir **cinco**, y son
-   todas las que el código lee en runtime:
+El proyecto de Vercel necesita **cinco** env vars, que son todas las que el código lee en runtime.
+Ninguna lleva prefijo `NEXT_PUBLIC_`, y así debe seguir: son secretos de servidor.
 
-   | Variable | De dónde sale |
-   |---|---|
-   | `DATABASE_URL_ADMIN` | `.env.local` |
-   | `DATABASE_URL_READONLY` | `.env.local` (la compuso `db:migrate`) |
-   | `OPENAI_API_KEY` | `.env.local` |
-   | `LLM_MODEL` | `openai/gpt-4o-mini` |
-   | `LLM_FALLBACK` | `openai/gpt-4.1-mini` |
+| Variable | Valor |
+|---|---|
+| `DATABASE_URL_ADMIN` | de `.env.local` |
+| `DATABASE_URL_READONLY` | de `.env.local` (la compuso `db:migrate`) |
+| `OPENAI_API_KEY` | de `.env.local` |
+| `LLM_MODEL` | `openai/gpt-4o-mini` |
+| `LLM_FALLBACK` | `openai/gpt-4.1-mini` |
 
-   Ninguna lleva prefijo `NEXT_PUBLIC_`, y así debe seguir: son secretos de servidor.
-
-Comprobación de que ha quedado bien, sin abrir el navegador:
+**Añadir una variable no arregla un deployment ya construido**: hay que volver a desplegar. Costó una
+vuelta entera de diagnóstico, así que conviene recordarlo. Comprobación rápida sin navegador:
 
 ```bash
 curl -s -X POST <url>/api/query -H 'Content-Type: application/json' \
   -d '{"question":"¿Cuánto facturé el mes pasado?","source":"demo","locale":"es"}' | head -c 300
 ```
 
-Debe devolver un `answer` con una cifra, no un `error`.
+Debe devolver un `answer` con una cifra, no un `error`. Los previews además llevan Deployment
+Protection activada por defecto (302 a `vercel.com/sso-api`): con ella puesta, un desconocido ve un
+login en vez de la demo.
 
 ### Latencia: la medida empeora, la percibida mejora
 
@@ -320,6 +320,12 @@ _Añadido en la Fase 2:_
 - **El CTA de la demo no lleva a un registro, porque todavía no existe** (auth es Fase 3). Apunta a
   una sección `#connect` de la landing que explica qué viene ahora. En cuanto haya signup, es un
   cambio de `href`
+- **`toApiChart` no ascendía a barras cuando el modelo decía `none`.** Se arregló la promoción para
+  `table` (el hallazgo de la Fase 1) pero se devolvía `null` antes de llegar a la inferencia si la
+  sugerencia era `none`, y el modelo contesta `none` a un top-5 más a menudo de lo esperado: en local
+  no se vio nunca y en el deploy salió a la primera. Ahora `none` pasa por la misma inferencia;
+  sobre un escalar sigue devolviendo `null`, que es lo correcto. **Probar solo en local no bastaba:
+  el mismo prompt da otra rama de código según el humor del modelo**
 - **El gráfico aparece con `done` (~7 s), no con la tabla (~3,5 s)**, porque el tipo de chart y sus
   campos los decide el segundo LLM. Se podría inferir un chart provisional en cliente cuando hay una
   dimensión y una métrica, y sustituirlo al llegar `done`; se descartó para no arriesgar un parpadeo
