@@ -27,6 +27,9 @@ Que un seller conecte su tienda en dos clics y, minutos después, pueda pregunta
   **token cifrado en reposo** en `stores.access_token`
 - `src/lib/shopify/graphql.js` — cliente GraphQL Admin API. Versión de API fijada explícitamente
 - `src/lib/shopify/sync.js` — sync inicial: pedidos de 12 meses, productos, clientes, inventario
+  - **Rellenar `orders.total_refunded` desde `totalRefundedSet`** (columna añadida en la Fase 3). Sin
+    esto, los ingresos de los pedidos parcialmente devueltos quedan inflados y el seller lo detecta al
+    cuadrar contra su admin. Es un criterio de aceptación, no un extra
   - Paginación por cursor
   - Respetar el rate limit (coste por query, leaky bucket) con backoff
   - Idempotente: `unique(store_id, platform_order_id)` ya está en el schema; usa upsert
@@ -44,7 +47,8 @@ Que un seller conecte su tienda en dos clics y, minutos después, pueda pregunta
 
 1. Conectar la dev store desde la app, con OAuth completo
 2. El sync inicial termina y los totales cuadran con el admin de Shopify (compara revenue del último
-   mes y número de pedidos — si no cuadra, algo se está perdiendo o duplicando)
+   mes y número de pedidos — si no cuadra, algo se está perdiendo o duplicando). **Incluye cuadrar los
+   pedidos con devolución parcial**: es el caso que la Fase 1 dejó explícitamente sobrestimado
 3. Crear un pedido en Shopify lo refleja en la app vía webhook en menos de un minuto
 4. Relanzar el sync no duplica datos
 5. El chat responde correctamente sobre los datos reales sincronizados

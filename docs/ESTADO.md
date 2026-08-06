@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-**Última actualización:** 6 agosto 2026 · sesión Fase 1
+**Última actualización:** 6 agosto 2026 · revisión del PM tras la Fase 1
 **Fase actual:** 1 completada → **siguiente: Fase 2 (HITO 1)**
 
 Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesión siguiente.
@@ -117,6 +117,33 @@ Las estructurales están en `docs/ARQUITECTURA.md` §8. Resumen de las que afect
 8. **El schema de Supabase se crea en la Fase 1**, no en la 3 — la Fase 1 necesita tablas contra las
    que ejecutar. La Fase 3 añade la identidad encima. (Ajuste sobre el plan original)
 
+## Decisiones del PM tras la Fase 1
+
+Tomadas el 6 agosto 2026 revisando el cierre de la Fase 1. Ya están aplicadas en los briefs.
+
+1. **Los ingresos se calculan netos de devoluciones.** La Fase 1 dejó los `partially_refunded`
+   contando enteros porque el schema no guarda el importe devuelto, y lo señaló. Es una decisión de
+   producto, no técnica: un seller con devoluciones cuadra nuestro revenue contra su admin de Shopify,
+   ve que inflamos, y pierde exactamente la propiedad por la que paga. La **Fase 3** añade
+   `orders.total_refunded` (migración `002`, `default 0`, así que no rompe el eval) y la **Fase 7** la
+   rellena desde `totalRefundedSet`. Se hace ahora porque cambiar qué significa "facturación" después
+   de que los usuarios hayan visto números es mucho peor que hacerlo antes
+
+2. **La revisión adversarial del aislamiento se adelanta de la Fase 8 a la Fase 3.** Los 26 ataques los
+   escribió quien escribió el guard: validan la implementación contra los fallos que su autor supo
+   imaginar, no el diseño. La Fase 3 es donde varios tenants reales empiezan a compartir base, así que
+   esperar a la 8 dejaba cinco fases de exposición con una sola pasada hecha por el autor. La hace una
+   sesión distinta, con vectores nuevos — ver el brief de la Fase 3
+
+3. **Los ~7 s se resuelven reordenando el render, no con un spinner.** El SQL está a los 3,3 s y las
+   filas a los 3,5 s; los 7 s son prosa sobre un número que ya existe. La Fase 2 renderiza SQL → tabla
+   → texto → insights según van llegando: el dato real aparece a los 3,5 s, la mitad. Requisito duro
+   del brief, no sugerencia
+
+4. **El coste no se toca.** $0,04 por 50 queries es el doble de lo estimado, pero el margen pasa de 82%
+   a 81,8% y la decisión de precio no cambia. Medir la factura real sigue siendo Fase 8. Si alguna vez
+   se plantea bajar de $9, ese número hay que tenerlo **antes** de anunciarlo
+
 ## Desviaciones respecto a `PRODUCTO.md`
 
 | Doc dice | Hacemos | Dónde está justificado |
@@ -159,6 +186,18 @@ _Añadido en la Fase 1:_
 - **DuckDB infiere `DECIMAL` para las columnas de dinero.** Con `DOUBLE`, sumar precios devolvía
   `40935.32999999963` en vez de `40935.33`. Es exactamente la clase de error que rompe la promesa del
   producto; si alguien toca `inferType`, que no lo revierta
+
+_Añadido por el PM al revisar la Fase 1:_
+
+- **`ARQUITECTURA.md` §5 documentaba `sessionId` y la ruta implementada lee `historySummary`.**
+  Corregido en el documento (la implementación era la correcta: en Fase 1 no hay historial que
+  resumir). Se detectó leyendo el código contra el contrato — la Fase 2 habría mandado `sessionId`, lo
+  habría visto ignorado **sin error**, y las preguntas de seguimiento habrían dejado de funcionar de
+  forma silenciosa. Vale la pena releer §5 contra la implementación al cerrar cada fase que toque la
+  ruta
+- **`NO_DATA` está definido en `messages/*.json` y no se usa.** La ruta devuelve 200 con `chart: null`
+  cuando no hay filas, que es mejor comportamiento (cero ventas en un periodo es una respuesta válida,
+  no un error). O se usa el código, o se retira
 
 ## Métricas (a rellenar según avancen las fases)
 

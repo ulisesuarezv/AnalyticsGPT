@@ -167,11 +167,19 @@ Estable desde la Fase 1. La Fase 2 consume esto y no debería necesitar cambiarl
 ```jsonc
 {
   "question": "¿Cuál fue mi producto más vendido este mes?",
-  "source": "store",          // "store" | "csv" | "demo"
-  "sessionId": "uuid|null",   // null en /demo
+  "source": "store",           // "store" | "csv" | "demo"
+  "historySummary": "string?", // contexto de la conversación, ver abajo
   "locale": "es"
 }
 ```
+
+**Sobre `historySummary`.** La ruta recibe el contexto ya resumido, no un `sessionId`. El servidor no
+va a buscar el historial: quien llama decide qué contexto es relevante y lo manda. En la Fase 3, cuando
+las conversaciones se persistan, el resumen se compone en servidor a partir de `messages` — pero el
+contrato de esta ruta no cambia.
+
+Es lo que hace que funcione "¿y el mes pasado?" después de "¿cuánto vendí en julio?". Si la Fase 2 no
+lo manda, cada pregunta se interpreta aislada y el chat deja de ser una conversación.
 
 **Response 200**
 
