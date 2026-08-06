@@ -159,19 +159,22 @@ function findBarFields(rows, preferredY) {
  */
 export function toApiChart(summary, rows) {
   const type = summary.chart_suggestion;
-  if (!type || type === 'none') return null;
-
   const columns = new Set(rows.length > 0 ? Object.keys(rows[0]) : []);
   const { x_field: xField, y_field: yField, title } = summary.chart_config ?? {};
 
-  const asTable = { type: 'table', xField: null, yField: null, title: title ?? '' };
+  const noChart = !type || type === 'none';
+  const fieldsOk = columns.has(xField) && columns.has(yField);
 
-  if (type === 'table' || !columns.has(xField) || !columns.has(yField)) {
-    // La tabla siempre se pinta aparte, así que ascender a barras no esconde
-    // ningún dato: solo añade una lectura visual donde la hay.
-    const bar = findBarFields(rows, yField);
-    return bar ? { type: 'bar', ...bar, title: title ?? '' } : asTable;
+  if (!noChart && type !== 'table' && fieldsOk) {
+    return { type, xField, yField, title: title ?? '' };
   }
 
-  return { type, xField, yField, title: title ?? '' };
+  // Ni el modelo propone gráfico, ni sus campos sirven. Un top-N con una
+  // dimensión y una métrica se lee mucho mejor en barras, y ascenderlo no
+  // esconde nada: la tabla se pinta igualmente al lado.
+  const bar = findBarFields(rows, yField);
+  if (bar) return { type: 'bar', ...bar, title: title ?? '' };
+
+  // `none` sobre un escalar es la respuesta correcta: no hay nada que dibujar.
+  return noChart ? null : { type: 'table', xField: null, yField: null, title: title ?? '' };
 }
