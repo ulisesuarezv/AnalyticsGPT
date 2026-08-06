@@ -23,5 +23,14 @@
     "retry": "Reintentar",
     "language": "Idioma",
     "theme": "Tema"
+  },
+  "Errors": {
+    "UNANSWERABLE": "No puedo responder a eso con los datos disponibles de esta tienda.",
+    "SQL_FAILED": "No he podido construir una consulta fiable para esa pregunta. Prueba a reformularla.",
+    "RATE_LIMITED": "Demasiadas peticiones. Espera un momento y vuelve a intentarlo.",
+    "QUOTA_EXCEEDED": "Has alcanzado tu límite de consultas de este mes.",
+    "NO_DATA": "Esa consulta no ha devuelto datos.",
+    "INTERNAL": "Algo ha fallado por nuestra parte. Inténtalo de nuevo en un momento.",
+    "INVALID_REQUEST": "La petición no es válida."
   }
 }

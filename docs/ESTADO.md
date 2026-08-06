@@ -1,7 +1,7 @@
 # Estado del proyecto
 
-**Última actualización:** 4 agosto 2026 · sesión PM
-**Fase actual:** **Fase 1 en curso, pausada a mitad** — ver "Dónde se retoma"
+**Última actualización:** 6 agosto 2026 · sesión Fase 1
+**Fase actual:** 1 completada → **siguiente: Fase 2 (HITO 1)**
 
 Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesión siguiente.
 
@@ -12,7 +12,7 @@ Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesió
 | Fase | Estado | Notas |
 |---|---|---|
 | 0 · Fundaciones | ✅ Completada | Build y lint limpios, `/es` y `/en` sirviendo |
-| 1 · Motor de queries | 🟡 **En curso, pausada** | ~30% hecho. Bloqueada por credenciales (B2) |
+| 1 · Motor de queries | ✅ Completada | Eval 95%, ataques 100%, 5/5 verificadas a mano |
 | 2 · Chat + `/demo` | ⬜ | **HITO 1** — revisión del usuario obligatoria |
 | 3 · Auth + multi-tenant | ⬜ | |
 | 4 · CSV upload | ⬜ | |
@@ -21,40 +21,59 @@ Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesió
 | 7 · Shopify | 🔒 **Bloqueada** | Falta Shopify Partners + dev store |
 | 8 · Hardening | ⬜ | |
 
-## Dónde se retoma la Fase 1
+## Fase 1 — cierre
 
-Pausada el 4 agosto 2026. Lee `docs/fases/fase-1-motor-queries.md` para el alcance completo; esto es
-solo el punto de corte.
+Todo el alcance del brief está entregado y **verificado ejecutando contra la base real**, sin mocks.
 
-**Hecho y verificado:**
+### Criterio de aceptación
 
-- `supabase/migrations/001_schema.sql` — tablas de `PRODUCTO.md` §8 (reordenadas para que las FK
-  compilen), índices, RLS + policies, las 5 vistas `security_barrier`, el rol `query_runner`, y los
-  `COMMENT ON` que alimentarán el catálogo del LLM.
-  ⚠️ **Escrito pero nunca aplicado contra la base.** Sigue sin validar contra Postgres real
-- `src/lib/sql/guard.js` + `tests/guard.test.js` — **42/42 en verde** (`npm test`)
-- `package.json` pasa a ESM (`"type": "module"`); scripts `test`, `eval`, `db:migrate`, `db:seed`
-  declarados. Dependencias instaladas: `ai` v7, `@ai-sdk/openai`, `zod`, `postgres`, `@duckdb/node-api`,
-  `dotenv`
+| # | Criterio | Resultado |
+|---|---|---|
+| 1 | `preguntas.json` ≥ 90% | **95,0%** (38/40) |
+| 2 | Incontestables → `UNANSWERABLE` | **4/4** |
+| 3 | `ataques.json` = 100% | **26/26**, sin excepciones |
+| 4 | 5 cifras verificadas a mano | **5/5** (`npm run verify:manual`) |
+| 5 | `build` y `lint` limpios | ✅ · más 44/44 tests del guard |
 
-**Falta (todo el resto del brief):**
+### Métricas del pipeline completo (text-to-SQL + summarize)
 
-- `scripts/apply-migrations.js`, `scripts/seed-demo.js`, `scripts/eval.js` — los tres están declarados
-  en `package.json` pero **no existen**; el directorio `scripts/` está sin crear
-- Aplicar la migración y validar que compila de verdad
-- Dataset demo + export a `public/demo-data/sample-ecommerce.csv` + `docs/eval/dataset.md`
-- `src/lib/db/` (`runScopedQuery`), `src/lib/sql/catalog.js`, `src/lib/duckdb/`, `src/lib/llm/`
-- `POST /api/query`
-- `docs/eval/preguntas.json` y `ataques.json`, y la ejecución real del eval
+| Métrica | Valor |
+|---|---|
+| Latencia p50 | 7,2 s |
+| Latencia p95 | 13,4 s |
+| Latencia máxima | 17,9 s |
+| Tokens medios por query | 4.019 |
+| Queries que necesitaron reintento | 3/40 |
 
-**Nit:** `npx eslint .` da 2 warnings en `guard.js` (directivas `eslint-disable` sin uso, líneas 242 y
-300). `npm run lint` limpio es criterio de aceptación de la fase — se arregla con `--fix`.
+Solo la fase text-to-SQL: p50 3,3 s · p95 5,4 s · 2.871 tokens.
+
+**Para la Fase 2: la espera es de ~7 s, con cola hasta 18 s.** Eso no se cubre con un spinner. Hace
+falta progreso por etapas ("escribiendo la consulta" → "consultando tus datos" → "redactando") o
+streaming del SQL en cuanto está disponible — que además es la prueba visible de que el número es
+real, que es lo que vende el producto.
+
+### Qué tipos de pregunta fallan
+
+Los 2 fallos restantes son el mismo patrón: **preguntas que cruzan dos conceptos** y necesitan un CTE
+o una subconsulta de apoyo.
+
+- `q24` "Which best-selling products are running low on stock?" — ventas × inventario
+- `q27` "¿Qué región ha crecido más en el último trimestre?" — geografía × crecimiento entre periodos
+
+En los dos casos el modelo responde `UNANSWERABLE` en vez de componer la consulta. **Ninguno devuelve
+un número equivocado**: falla en seguro, que es la dirección correcta del error. Si la Fase 2 los
+necesita, el camino es few-shot con un par de ejemplos de consulta compuesta — no tocar el guard.
+
+### Coste real por query
+
+~4.000 tokens con `gpt-4o-mini` ≈ **$0,0008 por query**, es decir **~$0,04 por 50 queries**. El
+`PRODUCTO.md` estimaba $0,02: es el **doble**, pero irrelevante frente a $9/mes — el margen pasa de
+82% a ~81,8%. El unit economics aguanta.
 
 ## Bloqueos
 
 | # | Bloqueo | Impide | Cómo se desbloquea |
 |---|---|---|---|
-| B2 | **Sin `.env.local`** | Continuar la Fase 1 | Ver "Credenciales" |
 | B1 | Sin cuenta de Shopify Partners ni dev store | Fase 7 completa | Crear cuenta en partners.shopify.com, generar una development store con datos de prueba de varios meses, crear la app y obtener client id/secret |
 
 Ninguna otra fase depende de B1. Las Fases 1-6 y 8 pueden completarse sin Shopify.
@@ -70,20 +89,19 @@ Ninguna otra fase depende de B1. Las Fases 1-6 y 8 pueden completarse sin Shopif
 | Google OAuth (en Supabase) | ⚠️ por confirmar | Fase 3 |
 | Shopify Partners | ❌ | Fase 7 |
 
-**El repo no tiene `.env.local`** (solo `.env.local.example`). Es el bloqueo B2. Para retomar la Fase 1
-hay que pedirle al usuario estas cinco cosas:
+`.env.local` **ya existe en local** con las cinco credenciales, y `DATABASE_URL_READONLY` está
+compuesta. No está en git (`.gitignore`), así que en una máquina nueva hay que rehacerlo desde
+`.env.local.example` y volver a pedir:
 
-1. `NEXT_PUBLIC_SUPABASE_URL`
-2. `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. `SUPABASE_SERVICE_ROLE_KEY`
-4. `OPENAI_API_KEY`
-5. La connection string de Postgres **con rol admin** — Supabase Dashboard → Connect → *Session
-   pooler*, formato `postgresql://postgres.<ref>:<password>@aws-….pooler.supabase.com:5432/postgres`
+1. `NEXT_PUBLIC_SUPABASE_URL` · 2. `NEXT_PUBLIC_SUPABASE_ANON_KEY` · 3. `SUPABASE_SERVICE_ROLE_KEY`
+4. `OPENAI_API_KEY` · 5. la connection string de Postgres **con rol admin** (Dashboard → Connect →
+*Session pooler*), que se guarda como `DATABASE_URL_ADMIN`
 
-`DATABASE_URL_READONLY` **no se pide**: se compone dentro de la Fase 1 tras crear el rol
-`query_runner`, generando su contraseña en el momento. La migración crea el rol a propósito sin
-contraseña, y `scripts/apply-migrations.js` se la fija por parámetro bindeado, para que nunca acabe
-interpolada en un fichero versionado.
+`DATABASE_URL_READONLY` no se pide nunca: la compone `npm run db:migrate` tras crear el rol
+`query_runner`, generándole la contraseña en el momento y fijándola por parámetro bindeado, para que
+no acabe interpolada en un fichero versionado.
+
+**Puesta en marcha desde cero:** `npm run db:migrate` → `npm run db:seed` → `npm run eval`.
 
 ## Decisiones tomadas
 
@@ -121,12 +139,36 @@ _Cada sesión añade aquí lo que encuentra fuera de su alcance. No lo arregles:
 - **Sin tests automatizados más allá del eval de la Fase 1.** Decisión consciente para el MVP; el guard
   de SQL sí lleva tests unitarios porque es el punto crítico
 
+_Añadido en la Fase 1:_
+
+- **La convención de facturación estaba sin definir y daba dos números distintos.** "¿Cuánto he
+  facturado?" admitía sumar todos los pedidos o solo los `paid`: 222.957 € frente a 205.258 €, ambas
+  defendibles. Se fijó en el `COMMENT` de `v_orders.financial_status` (excluir solo los `refunded`;
+  los `partially_refunded` cuentan enteros porque el schema **no guarda el importe devuelto**). Al
+  vivir en el schema, el catálogo la propaga sola al prompt. **La limitación de fondo sigue ahí**: sin
+  columna de importe reembolsado, los ingresos de un pedido parcialmente devuelto están sobrestimados.
+  Si Shopify lo expone (Fase 7), conviene añadir la columna y revisar la convención
+- **`toApiChart` a veces recibe `table` donde un `bar` sería mejor.** En un top-5 con 3 columnas el
+  modelo elige `table`. No es incorrecto, pero la Fase 2 puede querer forzar `bar` cuando hay una
+  dimensión y una métrica numérica
+- **Las 2 preguntas que fallan necesitan few-shot, no más prompt.** Ver "Fase 1 — cierre". Añadir uno
+  o dos ejemplos de consulta compuesta al prompt es lo primero que hay que probar; el brief de la
+  Fase 1 prohibía few-shot dinámico ("primero que funcione y se mida"), y ya está medido
+- **El parser de CSV del eval es de juguete.** `src/lib/duckdb/engine.js` está probado contra el CSV
+  demo con un split por comas escrito a mano. El parser real con SheetJS es la Fase 4
+- **DuckDB infiere `DECIMAL` para las columnas de dinero.** Con `DOUBLE`, sumar precios devolvía
+  `40935.32999999963` en vez de `40935.33`. Es exactamente la clase de error que rompe la promesa del
+  producto; si alguien toca `inferType`, que no lo revierta
+
 ## Métricas (a rellenar según avancen las fases)
 
 | Métrica | Valor | Medido en |
 |---|---|---|
-| Acierto del eval de text-to-SQL | — | Fase 1 |
-| Ataques bloqueados | — | Fase 1 |
-| Latencia p50 / p95 por query | — | Fase 1 |
-| Tokens medios por query | — | Fase 1 |
-| Coste real por query | — | Fase 8 |
+| Acierto del eval de text-to-SQL | **95,0%** (38/40) | Fase 1 |
+| Ataques bloqueados | **100%** (26/26) | Fase 1 |
+| Latencia p50 / p95 por query | **7,2 s / 13,4 s** (pipeline completo) | Fase 1 |
+| Tokens medios por query | **4.019** | Fase 1 |
+| Coste real por query | ~$0,0008 (estimado desde tokens) | Fase 8 (medir en factura) |
+
+Reproducir: `npm run eval -- --full` y `npm run verify:manual`. La salida completa, con el SQL
+generado por cada pregunta, queda en `docs/eval/resultados/ultimo.json`.

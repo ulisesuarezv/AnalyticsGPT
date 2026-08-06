@@ -239,7 +239,7 @@ function collectTableRefs(masked) {
     if (t !== 'from' && t !== 'join') continue;
 
     let i = idx + 1;
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       while (tokens[i] === 'lateral' || tokens[i] === 'only') i += 1;
 
@@ -297,7 +297,7 @@ export function validateSql(sql, options = {}) {
   if (trimmed.length > MAX_LENGTH) return fail(GUARD_CODES.TOO_LONG, `${trimmed.length} chars`);
 
   // Caracteres de control (incluido \0) usados para partir el parseo del servidor.
-  // eslint-disable-next-line no-control-regex
+   
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(trimmed)) {
     return fail(GUARD_CODES.BAD_IDENTIFIER, 'control character');
   }
@@ -315,6 +315,11 @@ export function validateSql(sql, options = {}) {
 
   const normalized = withoutTrailing.trim();
   const lower = normalized.toLowerCase();
+
+  // Lo que se DEVUELVE es el SQL original, no el enmascarado: el enmascarado
+  // tiene los literales vaciados (`interval '30 days'` → `interval ''`) y solo
+  // sirve para inspeccionar. Ejecutarlo rompería toda consulta con literales.
+  const executable = trimmed.replace(/;\s*$/, '').trim();
 
   // --- empieza por SELECT, o por un WITH cuyo cuerpo sea SELECT -------------
   if (!/^(select|with)\b/.test(lower)) {
@@ -362,5 +367,5 @@ export function validateSql(sql, options = {}) {
     return fail(GUARD_CODES.UNKNOWN_TABLE, ref.name);
   }
 
-  return { ok: true, sql: normalized };
+  return { ok: true, sql: executable };
 }

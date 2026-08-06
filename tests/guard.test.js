@@ -291,3 +291,24 @@ test('postgres y duckdb no comparten allowlist', () => {
 test('rechaza un dialecto desconocido', () => {
   assertRejected(validateSql('select 1 from v_orders', { dialect: 'mysql' }));
 });
+
+// -----------------------------------------------------------------------------
+// Regresión: el guard devuelve el SQL EJECUTABLE, no el enmascarado
+// -----------------------------------------------------------------------------
+
+test('devuelve el SQL original, con los literales intactos', () => {
+  const sql = "select sum(total_price) from v_orders where created_at_platform >= now() - interval '30 days' and financial_status = 'paid'";
+  const r = pg(sql);
+  assert.equal(r.ok, true, r.reason);
+  // El enmascarado vacía los literales; ejecutar eso rompe toda consulta con
+  // fechas o filtros por texto.
+  assert.match(r.sql, /interval '30 days'/, 'el literal de interval se ha perdido');
+  assert.match(r.sql, /'paid'/, 'el literal de texto se ha perdido');
+  assert.equal(r.sql, sql);
+});
+
+test('preserva mayúsculas y apóstrofos escapados del original', () => {
+  const r = pg("SELECT title FROM v_products WHERE vendor = 'O''Neill'");
+  assert.equal(r.ok, true);
+  assert.equal(r.sql, "SELECT title FROM v_products WHERE vendor = 'O''Neill'");
+});

@@ -379,6 +379,21 @@ begin
 end
 $$;
 
+-- La contraseña se fija desde scripts/apply-migrations.js llamando a esta
+-- función con un parámetro bindeado. `format` con %L escapa el literal, y la
+-- función es SECURITY DEFINER para poder ejecutar ALTER ROLE.
+create or replace function set_query_runner_password(new_password text)
+returns void
+language plpgsql
+security definer
+as $fn$
+begin
+  execute format('alter role query_runner with password %L', new_password);
+end
+$fn$;
+
+revoke all on function set_query_runner_password(text) from public;
+
 -- Nada por defecto, y nada heredado de futuros grants a public.
 revoke all on schema public from query_runner;
 revoke all on all tables in schema public from query_runner;
@@ -406,9 +421,9 @@ alter role query_runner set search_path = public;
 comment on view v_orders is 'Un pedido por fila. La unidad de venta: cabecera del pedido con sus importes totales.';
 comment on column v_orders.order_number is 'Identificador del pedido visible para el seller. Clave para unir con v_order_items.';
 comment on column v_orders.created_at_platform is 'Fecha y hora en que se hizo el pedido. Es la fecha que hay que usar para cualquier filtro temporal.';
-comment on column v_orders.financial_status is 'Estado de cobro: paid, refunded, partially_refunded, pending. Una devolución es refunded o partially_refunded.';
+comment on column v_orders.financial_status is 'Estado de cobro: paid, refunded, partially_refunded. CONVENCIÓN DE FACTURACIÓN: para ingresos, excluir solo los pedidos refunded (devueltos por completo); los partially_refunded SÍ cuentan, porque el schema no guarda el importe devuelto. Es decir: where financial_status <> ''refunded''.';
 comment on column v_orders.fulfillment_status is 'Estado de envío: fulfilled, unfulfilled, partial.';
-comment on column v_orders.total_price is 'Importe total del pedido, impuestos incluidos y descuentos ya restados. Es el campo de facturación.';
+comment on column v_orders.total_price is 'Importe total del pedido, impuestos incluidos y descuentos ya restados. Es el campo de facturación: sumar esto, aplicando la convención de financial_status.';
 comment on column v_orders.subtotal_price is 'Importe de los productos antes de impuestos y después de descuentos.';
 comment on column v_orders.total_tax is 'Impuestos del pedido.';
 comment on column v_orders.total_discounts is 'Descuentos aplicados al pedido. 0 si no hubo.';
@@ -428,7 +443,7 @@ comment on column v_order_items.price is 'Precio unitario del producto, sin desc
 comment on column v_order_items.total_discount is 'Descuento aplicado a la línea entera, no por unidad.';
 comment on column v_order_items.line_total is 'Ingreso real de la línea: quantity * price - total_discount. Para "producto que más factura", sumar esto y no price.';
 comment on column v_order_items.created_at_platform is 'Fecha del pedido al que pertenece la línea, repetida aquí para poder filtrar por fecha sin unir con v_orders.';
-comment on column v_order_items.financial_status is 'Estado de cobro del pedido al que pertenece la línea. Para excluir devoluciones, filtrar aquí.';
+comment on column v_order_items.financial_status is 'Estado de cobro del pedido al que pertenece la línea. Para ingresos, excluir solo refunded (misma convención que v_orders.financial_status).';
 
 comment on view v_products is 'Catálogo de productos de la tienda. Una fila por producto (no por variante).';
 comment on column v_products.product_ref is 'Referencia del producto. Une con v_order_items.product_ref.';

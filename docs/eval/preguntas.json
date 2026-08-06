@@ -1,0 +1,315 @@
+{
+  "$comment": "40 preguntas reales de un seller. Mitad ES, mitad EN. `expect` es 'sql' (debe generar SQL válido y ejecutable) o 'unanswerable' (no hay datos para responder; debe decirlo, no inventar). `checks` son aserciones opcionales sobre el resultado real, para cazar SQL que ejecuta pero agrega mal.",
+  "questions": [
+    {
+      "id": "q01",
+      "lang": "es",
+      "category": "ventas-periodo",
+      "question": "¿Cuánto he facturado en total en los últimos 12 meses?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q02",
+      "lang": "en",
+      "category": "ventas-periodo",
+      "question": "What was my total revenue in December 2025?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q03",
+      "lang": "es",
+      "category": "ventas-periodo",
+      "question": "Dame las ventas mes a mes del último año",
+      "expect": "sql",
+      "checks": { "minRows": 10, "maxRows": 14 }
+    },
+    {
+      "id": "q04",
+      "lang": "en",
+      "category": "ventas-periodo",
+      "question": "How many orders did I get last month?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q05",
+      "lang": "es",
+      "category": "top-productos",
+      "question": "¿Cuáles son mis 10 productos más vendidos por unidades?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 10 }
+    },
+    {
+      "id": "q06",
+      "lang": "en",
+      "category": "top-productos",
+      "question": "Which 5 products generate the most revenue?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 5 }
+    },
+    {
+      "id": "q07",
+      "lang": "es",
+      "category": "top-productos",
+      "question": "¿Qué producto se ha vendido peor este año?",
+      "expect": "sql"
+    },
+    {
+      "id": "q08",
+      "lang": "en",
+      "category": "top-productos",
+      "question": "Show me revenue by product category",
+      "expect": "sql",
+      "checks": { "minRows": 2, "maxRows": 10 }
+    },
+    {
+      "id": "q09",
+      "lang": "es",
+      "category": "comparativa",
+      "question": "Compara mis ventas de este trimestre con el trimestre anterior",
+      "expect": "sql"
+    },
+    {
+      "id": "q10",
+      "lang": "en",
+      "category": "comparativa",
+      "question": "Did I sell more in Q4 2025 than in Q1 2026?",
+      "expect": "sql"
+    },
+    {
+      "id": "q11",
+      "lang": "es",
+      "category": "comparativa",
+      "question": "¿Qué productos han caído más en ventas en los últimos dos meses respecto a los dos anteriores?",
+      "expect": "sql",
+      "checks": { "minRows": 1 }
+    },
+    {
+      "id": "q12",
+      "lang": "en",
+      "category": "comparativa",
+      "question": "Compare revenue by month this year versus the same months last year",
+      "expect": "sql"
+    },
+    {
+      "id": "q13",
+      "lang": "es",
+      "category": "clientes",
+      "question": "¿Cuántos clientes recurrentes tengo?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q14",
+      "lang": "en",
+      "category": "clientes",
+      "question": "Who are my top 10 customers by total spend?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 10 }
+    },
+    {
+      "id": "q15",
+      "lang": "es",
+      "category": "clientes",
+      "question": "¿Qué porcentaje de mis clientes ha comprado más de una vez?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q16",
+      "lang": "en",
+      "category": "clientes",
+      "question": "How many new customers placed their first order in the last 3 months?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q17",
+      "lang": "es",
+      "category": "clientes",
+      "question": "Dame los clientes que no compran desde hace más de 6 meses",
+      "expect": "sql"
+    },
+    {
+      "id": "q18",
+      "lang": "en",
+      "category": "aov",
+      "question": "What's my average order value?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q19",
+      "lang": "es",
+      "category": "aov",
+      "question": "¿Cómo ha evolucionado mi ticket medio mes a mes?",
+      "expect": "sql",
+      "checks": { "minRows": 10 }
+    },
+    {
+      "id": "q20",
+      "lang": "en",
+      "category": "aov",
+      "question": "Is my average order value higher for repeat customers than for first-time buyers?",
+      "expect": "sql"
+    },
+    {
+      "id": "q21",
+      "lang": "es",
+      "category": "inventario",
+      "question": "¿Qué productos están agotados ahora mismo?",
+      "expect": "sql"
+    },
+    {
+      "id": "q22",
+      "lang": "en",
+      "category": "inventario",
+      "question": "Which products have less than 20 units in stock?",
+      "expect": "sql"
+    },
+    {
+      "id": "q23",
+      "lang": "es",
+      "category": "inventario",
+      "question": "¿Cuántas unidades tengo en stock en total por almacén?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 5 }
+    },
+    {
+      "id": "q24",
+      "lang": "en",
+      "category": "inventario",
+      "question": "Which best-selling products are running low on stock?",
+      "expect": "sql"
+    },
+    {
+      "id": "q25",
+      "lang": "es",
+      "category": "geografia",
+      "question": "¿En qué países vendo más?",
+      "expect": "sql",
+      "checks": { "minRows": 2 }
+    },
+    {
+      "id": "q26",
+      "lang": "en",
+      "category": "geografia",
+      "question": "Show me revenue by Spanish province",
+      "expect": "sql",
+      "checks": { "minRows": 2 }
+    },
+    {
+      "id": "q27",
+      "lang": "es",
+      "category": "geografia",
+      "question": "¿Qué región ha crecido más en el último trimestre?",
+      "expect": "sql",
+      "checks": { "minRows": 1 }
+    },
+    {
+      "id": "q28",
+      "lang": "en",
+      "category": "geografia",
+      "question": "What are my top 5 cities by number of orders?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 5 }
+    },
+    {
+      "id": "q29",
+      "lang": "es",
+      "category": "devoluciones",
+      "question": "¿Cuántos pedidos he tenido que devolver este año?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q30",
+      "lang": "en",
+      "category": "devoluciones",
+      "question": "What percentage of my orders were refunded?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q31",
+      "lang": "es",
+      "category": "devoluciones",
+      "question": "¿Qué productos se devuelven más?",
+      "expect": "sql"
+    },
+    {
+      "id": "q32",
+      "lang": "en",
+      "category": "descuentos",
+      "question": "How much did I give away in discounts last quarter?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+    {
+      "id": "q33",
+      "lang": "es",
+      "category": "descuentos",
+      "question": "¿Los pedidos con descuento tienen un ticket medio mayor que los que no?",
+      "expect": "sql"
+    },
+    {
+      "id": "q34",
+      "lang": "en",
+      "category": "canal",
+      "question": "How do sales split between web, mobile and POS?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 6 }
+    },
+    {
+      "id": "q35",
+      "lang": "es",
+      "category": "canal",
+      "question": "¿Qué día de la semana vendo más?",
+      "expect": "sql",
+      "checks": { "minRows": 1, "maxRows": 7 }
+    },
+    {
+      "id": "q36",
+      "lang": "en",
+      "category": "operativa",
+      "question": "How many orders are still unfulfilled?",
+      "expect": "sql",
+      "checks": { "maxRows": 1 }
+    },
+
+    {
+      "id": "q37",
+      "lang": "es",
+      "category": "incontestable",
+      "question": "¿Cuál es mi margen de beneficio por producto?",
+      "expect": "unanswerable",
+      "why": "No hay coste de producto ni precio de compra en el schema"
+    },
+    {
+      "id": "q38",
+      "lang": "en",
+      "category": "incontestable",
+      "question": "What's my return on ad spend this month?",
+      "expect": "unanswerable",
+      "why": "No hay datos de inversión publicitaria ni de atribución"
+    },
+    {
+      "id": "q39",
+      "lang": "es",
+      "category": "incontestable",
+      "question": "¿Cuál es mi tasa de conversión de la tienda?",
+      "expect": "unanswerable",
+      "why": "No hay sesiones ni visitas, solo pedidos"
+    },
+    {
+      "id": "q40",
+      "lang": "en",
+      "category": "incontestable",
+      "question": "Which of my competitors is growing faster than me?",
+      "expect": "unanswerable",
+      "why": "No hay datos de competidores"
+    }
+  ]
+}

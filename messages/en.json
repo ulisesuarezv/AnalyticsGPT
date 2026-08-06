@@ -23,5 +23,14 @@
     "retry": "Try again",
     "language": "Language",
     "theme": "Theme"
+  },
+  "Errors": {
+    "UNANSWERABLE": "I can't answer that with the data available for this store.",
+    "SQL_FAILED": "I couldn't build a reliable query for that question. Try rephrasing it.",
+    "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
+    "QUOTA_EXCEEDED": "You've reached your query limit for this month.",
+    "NO_DATA": "That query returned no data.",
+    "INTERNAL": "Something went wrong on our side. Try again in a moment.",
+    "INVALID_REQUEST": "The request is not valid."
   }
 }
