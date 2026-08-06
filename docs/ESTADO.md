@@ -55,6 +55,43 @@ de layout en cada pregunta que en móvil se nota mucho.
 `historySummary` se compone en cliente (`src/lib/chat/history.js`) con los 3 últimos turnos,
 incluyendo el SQL de cada uno: es el contexto más preciso que existe sobre qué se midió antes.
 
+### Deploy — qué falta para que el link funcione
+
+La rama `fase-2-chat-demo` está en `origin` y Vercel ya ha construido su preview con éxito:
+
+```
+https://analytics-1ujwkb5mg-ulisesuarezvs-projects.vercel.app
+```
+
+**Ese link todavía no sirve para enseñar la demo**, por dos cosas que dependen de la cuenta de
+Vercel, no del código:
+
+1. **Deployment Protection está activo en los previews.** El deployment responde 302 a
+   `vercel.com/sso-api`: alguien ajeno al proyecto ve una pantalla de login, no la demo. Se desactiva
+   en Settings → Deployment Protection
+2. **Faltan las env vars en el proyecto de Vercel.** Producción responde `INTERNAL` 500 a cualquier
+   pregunta, que es exactamente lo que pasa sin base ni clave de LLM. Hay que añadir **cinco**, y son
+   todas las que el código lee en runtime:
+
+   | Variable | De dónde sale |
+   |---|---|
+   | `DATABASE_URL_ADMIN` | `.env.local` |
+   | `DATABASE_URL_READONLY` | `.env.local` (la compuso `db:migrate`) |
+   | `OPENAI_API_KEY` | `.env.local` |
+   | `LLM_MODEL` | `openai/gpt-4o-mini` |
+   | `LLM_FALLBACK` | `openai/gpt-4.1-mini` |
+
+   Ninguna lleva prefijo `NEXT_PUBLIC_`, y así debe seguir: son secretos de servidor.
+
+Comprobación de que ha quedado bien, sin abrir el navegador:
+
+```bash
+curl -s -X POST <url>/api/query -H 'Content-Type: application/json' \
+  -d '{"question":"¿Cuánto facturé el mes pasado?","source":"demo","locale":"es"}' | head -c 300
+```
+
+Debe devolver un `answer` con una cifra, no un `error`.
+
 ### Latencia: la medida empeora, la percibida mejora
 
 El p50 del pipeline sube de 7,2 s a 9,1 s: el few-shot alarga el prompt (4.019 → 4.865 tokens de
