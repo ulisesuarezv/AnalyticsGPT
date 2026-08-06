@@ -14,6 +14,11 @@ Cero alucinación en los números — es la propiedad que vende el producto.
 Si `docs/ARQUITECTURA.md` y `docs/PRODUCTO.md` se contradicen, **manda ARQUITECTURA**: contiene las
 desviaciones deliberadas decididas por el PM.
 
+> **`docs/PRODUCTO.md` no está en el repositorio.** Lleva pricing, márgenes y análisis de competencia,
+> y este repo es público, así que está en `.gitignore` y vive solo en la máquina del PM. Si trabajas en
+> un clon y no lo encuentras, no es un error: pídeselo al PM. Lo que necesitas de él para programar
+> —schema, prompts, contrato— está recogido en `ARQUITECTURA.md` y en los briefs de fase.
+
 ---
 
 ## Stack

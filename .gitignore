@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Documento de producto: local, no se publica (repo público)
+docs/PRODUCTO.md
