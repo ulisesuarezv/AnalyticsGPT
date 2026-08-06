@@ -8,7 +8,7 @@
  * calcula (docs/ARQUITECTURA.md §1).
  */
 
-import { generateText, Output } from 'ai';
+import { streamText, Output } from 'ai';
 import { z } from 'zod';
 
 import { getPrimaryModel, getFallbackModel } from './models.js';
@@ -49,12 +49,21 @@ A SQL query was executed and returned exact results. Your job:
    Each insight must be specific and actionable, with numbers taken from the results.
    If the results do not support an insight, return fewer insights rather than inventing one.
    query_suggestion must be a follow-up question phrased in the same language as the answer.
-6. Keep the main answer to 2-4 sentences. Insights are separate.`;
+6. Keep the main answer to 2-4 sentences. Insights are separate.
+7. Write plain prose. Never format the answer as a markdown table, a bullet list or a code
+   block: the full results are already rendered as a real table next to your answer, and
+   markdown syntax shows up there as raw pipes and asterisks.`;
 
 /**
+ * @param {object} params
+ * @param {(delta: string) => void} [params.onAnswerDelta] Recibe el texto de
+ *   `answer` según se redacta. Es lo que permite que la Fase 2 pinte la prosa
+ *   mientras llega, con la tabla ya en pantalla desde los ~3,5 s.
  * @returns {Promise<{ summary: object, tokens: number, modelId: string }>}
  */
-export async function summarizeResult({ question, sql, rows, rowCount, truncated, store }) {
+export async function summarizeResult({
+  question, sql, rows, rowCount, truncated, store, onAnswerDelta,
+}) {
   const shown = rows.slice(0, MAX_ROWS_IN_PROMPT);
 
   const prompt = `QUESTION:
@@ -78,8 +87,11 @@ STORE CONTEXT:
   let lastError = null;
 
   for (const { model, id: modelId } of candidates) {
+    // Con un reintento, lo ya emitido se descarta: el cliente reemplaza la
+    // respuesta con el `answer` final, nunca la concatena.
+    let emitted = '';
     try {
-      const result = await generateText({
+      const result = streamText({
         model,
         instructions: SYSTEM,
         prompt,
@@ -87,8 +99,23 @@ STORE CONTEXT:
         maxOutputTokens: 1200,
         output: Output.object({ schema: summarySchema }),
       });
-      tokens += result.usage?.totalTokens ?? 0;
-      return { summary: result.output, tokens, modelId };
+
+      if (!onAnswerDelta) {
+        // Sin consumir el stream, las promesas de `output`/`usage` no resuelven.
+        await result.consumeStream();
+      } else {
+        for await (const partial of result.partialOutputStream) {
+          const answer = typeof partial?.answer === 'string' ? partial.answer : '';
+          if (answer.startsWith(emitted) && answer.length > emitted.length) {
+            onAnswerDelta(answer.slice(emitted.length));
+            emitted = answer;
+          }
+        }
+      }
+
+      const summary = await result.output;
+      tokens += (await result.usage)?.totalTokens ?? 0;
+      return { summary, tokens, modelId };
     } catch (error) {
       lastError = error;
       tokens += error?.usage?.totalTokens ?? 0;
@@ -96,6 +123,33 @@ STORE CONTEXT:
   }
 
   throw lastError ?? new Error('summarize falló sin error');
+}
+
+/** Cuántas filas siguen leyéndose bien como barras. Por encima, tabla. */
+const MAX_ROWS_FOR_FORCED_BAR = 20;
+
+const isNumeric = (value) => typeof value === 'number'
+  || (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)));
+
+/**
+ * Detecta el caso "una dimensión y una métrica": exactamente una columna no
+ * numérica y al menos una numérica. Es el top-N que el modelo etiqueta como
+ * `table` y se lee mucho mejor en barras (hallazgo de la Fase 1).
+ */
+function findBarFields(rows, preferredY) {
+  if (rows.length < 2 || rows.length > MAX_ROWS_FOR_FORCED_BAR) return null;
+
+  const columns = Object.keys(rows[0]);
+  const sample = rows.slice(0, 5);
+  const numeric = columns.filter((c) => sample.every((r) => r[c] != null && isNumeric(r[c])));
+  const dimensions = columns.filter((c) => !numeric.includes(c));
+
+  if (dimensions.length !== 1 || numeric.length === 0) return null;
+
+  return {
+    xField: dimensions[0],
+    yField: numeric.includes(preferredY) ? preferredY : numeric[0],
+  };
 }
 
 /**
@@ -110,14 +164,14 @@ export function toApiChart(summary, rows) {
   const columns = new Set(rows.length > 0 ? Object.keys(rows[0]) : []);
   const { x_field: xField, y_field: yField, title } = summary.chart_config ?? {};
 
-  if (type !== 'table') {
-    if (!columns.has(xField) || !columns.has(yField)) return { type: 'table', xField: null, yField: null, title: title ?? '' };
+  const asTable = { type: 'table', xField: null, yField: null, title: title ?? '' };
+
+  if (type === 'table' || !columns.has(xField) || !columns.has(yField)) {
+    // La tabla siempre se pinta aparte, así que ascender a barras no esconde
+    // ningún dato: solo añade una lectura visual donde la hay.
+    const bar = findBarFields(rows, yField);
+    return bar ? { type: 'bar', ...bar, title: title ?? '' } : asTable;
   }
 
-  return {
-    type,
-    xField: columns.has(xField) ? xField : null,
-    yField: columns.has(yField) ? yField : null,
-    title: title ?? '',
-  };
+  return { type, xField, yField, title: title ?? '' };
 }

@@ -16,13 +16,70 @@ const MAX_RETRIES = 2;
 
 const DIALECT_NOTES = {
   postgres: `- Generate ONLY valid PostgreSQL. No explanations, no markdown.
-- For dates use PostgreSQL functions: date_trunc, now(), interval, to_char, extract.
+- For dates use PostgreSQL functions: date_trunc, now(), interval, to_char, date_part.
+- NEVER write EXTRACT(field FROM column). Use date_part('field', column) instead — it is
+  equivalent. (The SQL guard reads the FROM inside EXTRACT as a table reference and rejects the
+  query; see docs/ESTADO.md.)
 - The current date is the real clock date; the data may end earlier than today.
 - To fill gaps in a time series use generate_series.`,
   duckdb: `- Generate ONLY valid DuckDB SQL. No explanations, no markdown.
 - For dates use DuckDB functions: strftime, date_part, date_trunc, current_date, interval.
 - There is exactly ONE table, called data. Never reference any other table.`,
 };
+
+/**
+ * Few-shot de consultas compuestas.
+ *
+ * La Fase 1 midió el eval en 95%: los 2 fallos eran preguntas que cruzan dos
+ * conceptos (ventas × inventario, geografía × crecimiento entre periodos) y el
+ * modelo respondía UNANSWERABLE en vez de componer un CTE. Estos dos ejemplos
+ * enseñan el patrón —CTE por concepto y join/comparación entre ellos— sin
+ * describir ninguna pregunta concreta del eval.
+ *
+ * Solo para Postgres: el flujo CSV tiene una única tabla y no cruza nada.
+ */
+const POSTGRES_FEWSHOT = `EXAMPLES OF COMPOSED QUERIES:
+When a question needs two different concepts, build one CTE per concept and
+combine them. Do NOT answer UNANSWERABLE just because no single view has it all.
+
+Q: Which products sell the most but have the least stock left?
+with sold as (
+  select oi.product_ref, oi.title, sum(oi.quantity) as units_sold
+    from v_order_items oi
+   where oi.created_at_platform >= now() - interval '30 days'
+     and oi.financial_status <> 'refunded'
+   group by oi.product_ref, oi.title
+), stock as (
+  select i.product_ref, sum(i.quantity) as units_in_stock
+    from v_inventory i
+   group by i.product_ref
+)
+select s.title, s.units_sold, coalesce(k.units_in_stock, 0) as units_in_stock
+  from sold s
+  left join stock k on k.product_ref = s.product_ref
+ order by s.units_sold desc
+ limit 20
+
+Q: Which country grew the most between the last two months?
+with per_month as (
+  select c.country,
+         date_trunc('month', o.created_at_platform) as month,
+         sum(o.total_price) as revenue
+    from v_orders o
+    join v_customers c on c.customer_ref = o.customer_ref
+   where o.created_at_platform >= date_trunc('month', now()) - interval '2 months'
+     and o.financial_status <> 'refunded'
+   group by c.country, date_trunc('month', o.created_at_platform)
+)
+select country,
+       coalesce(sum(revenue) filter (where month = date_trunc('month', now())), 0) as current_revenue,
+       coalesce(sum(revenue) filter (where month = date_trunc('month', now()) - interval '1 month'), 0) as previous_revenue
+  from per_month
+ group by country
+ order by current_revenue - previous_revenue desc
+ limit 20
+
+Adapt the shape, never the column names: use only the schema below.`;
 
 function buildSystemPrompt({ dialect, schema, sampleRows }) {
   return `You are a SQL query generator for an ecommerce analytics tool. Convert natural language questions about store data into SQL.
@@ -59,7 +116,7 @@ SCHEMA:
 ${schema}
 
 SAMPLE DATA (${3} rows per view):
-${sampleRows}`;
+${sampleRows}${dialect === 'postgres' ? `\n\n${POSTGRES_FEWSHOT}` : ''}`;
 }
 
 function buildUserPrompt({ question, historySummary }) {

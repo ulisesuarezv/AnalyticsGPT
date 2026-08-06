@@ -15,7 +15,72 @@
     "subtitle": "Exact answers, not approximations. Every number comes from a real query against your own data — never from a guess.",
     "ctaPrimary": "Try the demo",
     "ctaSecondary": "See pricing",
-    "status": "Phase 0 — foundations in place. The chat pipeline lands in Phase 1."
+    "status": "Phase 2 — public demo. Store connection and accounts are next."
+  },
+  "Landing": {
+    "navDemo": "Live demo",
+    "ctaNote": "No sign-up. Real data from a demo store.",
+    "exampleChrome": "Live example",
+    "exampleQuestion": "Which products sold the most in the last 30 days?",
+    "exampleSqlShow": "Show the query that produced this",
+    "exampleSqlHide": "Hide the query",
+    "exampleAnswer": "In the last 30 days, the top-selling product was the \"Marble Bath Mat\" with 26 units sold, followed closely by the \"Stone Quilted Bedspread\" with 25 units, and the \"Marble Bath Towel Set\" with 24 units sold. Other notable products include the \"Brass Wall Art Print\" at 19 units and the \"Bamboo Picture Frame\" at 18 units.",
+    "exampleFootnote": "Actual output from the demo store, not a mockup. Every figure comes from the query above.",
+    "props": {
+      "exact": {
+        "title": "The database does the maths",
+        "body": "The model writes the query; PostgreSQL computes the number. The answer is written from the real result, so there is nothing left to hallucinate."
+      },
+      "proof": {
+        "title": "Every answer shows its query",
+        "body": "The executed SQL is one click away on every response. You do not have to trust us — you can read exactly what was measured."
+      },
+      "insights": {
+        "title": "It keeps pulling the thread",
+        "body": "Each answer comes with things you did not ask about: trends, anomalies, opportunities. Tap one and it becomes your next question."
+      }
+    },
+    "connect": {
+      "title": "Your own store, next",
+      "body": "The demo runs on a sample store so you can try it without signing up. Connecting your own store — Shopify sync and CSV upload — is what we are building next.",
+      "cta": "Try the demo first"
+    }
+  },
+  "Demo": {
+    "metaTitle": "Live demo — ask a real store's sales data",
+    "metaDescription": "Ask questions in plain language about a real ecommerce dataset. Exact numbers, the SQL behind them, and charts. No sign-up.",
+    "banner": "Demo store: {store} · real orders from {period}. Ask anything about its sales.",
+    "bannerFallback": "Demo store with real sales data. Ask anything about it.",
+    "ctaTitle": "This is a sample store. Yours is the interesting one.",
+    "ctaBody": "Keep asking as long as you like — nothing here is blocked. When store connection ships, the same answers will run on your own sales.",
+    "ctaButton": "See what's coming"
+  },
+  "Chat": {
+    "placeholder": "Ask about sales, products, customers…",
+    "send": "Send",
+    "stop": "Stop",
+    "disclaimer": "Numbers come from a SQL query against the data. Open the query to check any answer.",
+    "suggestionsTitle": "Try asking",
+    "suggestions": {
+      "revenue": "How much revenue did I make last month?",
+      "topProducts": "What are my top 5 best-selling products?",
+      "trend": "Show me revenue by week over the last 3 months",
+      "repeatCustomers": "How many customers ordered more than once?",
+      "geography": "Which countries do my orders come from?",
+      "lowStock": "Which best-selling products are running low on stock?"
+    },
+    "stageWritingSql": "Writing the query…",
+    "stageRunning": "Querying your data…",
+    "stageSummarizing": "Writing the answer…",
+    "sqlToggle": "Query executed",
+    "copySql": "Copy the SQL",
+    "rowCount": "{count, plural, one {# row} other {# rows}}",
+    "rowsShown": "Showing {shown} of {total} rows — the CSV has all of them",
+    "truncated": "result capped at 1,000 rows",
+    "exportCsv": "CSV",
+    "exportPng": "PNG",
+    "insightsTitle": "You might also want to know",
+    "genericError": "Something went wrong on our side. Try again in a moment."
   },
   "Common": {
     "loading": "Loading…",

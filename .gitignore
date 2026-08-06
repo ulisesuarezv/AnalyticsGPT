@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# salidas de QA con navegador (Playwright MCP)
+.playwright-mcp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

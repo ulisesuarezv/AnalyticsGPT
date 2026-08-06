@@ -50,6 +50,35 @@ export async function getDemoStore() {
 }
 
 /**
+ * Rango temporal de los pedidos del store demo.
+ *
+ * La demo se enseña a desconocidos y el seed no llega hasta hoy: sin decir qué
+ * periodo cubre, "¿cuánto he facturado este mes?" contesta correctamente que
+ * cero y parece que el producto está roto. El rango se lee de la base, no se
+ * escribe a mano, para que no mienta si se vuelve a sembrar.
+ */
+export async function getDemoDataRange() {
+  if (globalForStores.__demoRange) return globalForStores.__demoRange;
+
+  const store = await getDemoStore();
+  const sql = getAdminClient();
+  const [range] = await sql`
+    select min(created_at_platform) as first_order_at,
+           max(created_at_platform) as last_order_at
+      from orders
+     where store_id = ${store.id}
+  `;
+
+  if (!range?.first_order_at) return null;
+
+  globalForStores.__demoRange = {
+    from: range.first_order_at.toISOString(),
+    to: range.last_order_at.toISOString(),
+  };
+  return globalForStores.__demoRange;
+}
+
+/**
  * Resuelve el store para una petición.
  *
  * TODO Fase 3: cuando exista auth, `source: 'store'` debe resolver el store del

@@ -1,7 +1,7 @@
 # Estado del proyecto
 
-**Última actualización:** 6 agosto 2026 · revisión del PM tras la Fase 1
-**Fase actual:** 1 completada → **siguiente: Fase 2 (HITO 1)**
+**Última actualización:** 6 agosto 2026 · cierre de la Fase 2
+**Fase actual:** 2 entregada → **pendiente de la revisión del usuario (HITO 1)**
 
 Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesión siguiente.
 
@@ -13,13 +13,85 @@ Cada sesión actualiza este fichero al terminar. Es lo primero que lee la sesió
 |---|---|---|
 | 0 · Fundaciones | ✅ Completada | Build y lint limpios, `/es` y `/en` sirviendo |
 | 1 · Motor de queries | ✅ Completada | Eval 95%, ataques 100%, 5/5 verificadas a mano |
-| 2 · Chat + `/demo` | ⬜ | **HITO 1** — revisión del usuario obligatoria |
+| 2 · Chat + `/demo` | 🟡 Entregada | **HITO 1** — código completo y verificado en local; falta la revisión del usuario y las env vars del deploy |
 | 3 · Auth + multi-tenant | ⬜ | |
 | 4 · CSV upload | ⬜ | |
 | 5 · Billing | ⬜ | |
 | 6 · Landing | ⬜ | |
 | 7 · Shopify | 🔒 **Bloqueada** | Falta Shopify Partners + dev store |
 | 8 · Hardening | ⬜ | |
+
+## Fase 2 — cierre
+
+Chat completo, `/demo` pública sobre el store demo, landing mínima, export CSV/PNG. Todo verificado
+ejecutando contra la base real y en navegador (desktop 1280px y móvil 390px, claro y oscuro).
+
+### Criterio de aceptación
+
+| # | Criterio | Resultado |
+|---|---|---|
+| 1 | Alguien ajeno pregunta en es/en y obtiene respuesta + chart + insights sin registrarse | ✅ probado en `/es/demo` y `/en/demo` |
+| 2 | El SQL y la tabla aparecen antes que la prosa | ✅ **medido en el DOM**: SQL 3,6 s · tabla 3,9 s · prosa 6,3 s · insights 7,7 s |
+| 3 | Pregunta de seguimiento con contexto | ✅ "¿y el mes pasado?" tras "top 5 productos" → top de julio, mismo sujeto |
+| 4 | Pulsar un insight encadena la conversación | ✅ |
+| 5 | Los números de la tabla coinciden con los del texto | ✅ (con una salvedad de formato, ver abajo) |
+| 6 | Móvil | ✅ 390×844, sin desbordes (`scrollWidth == innerWidth`) |
+| 7 | Claro y oscuro, gráficos incluidos | ✅ todo el color sale de `--chart-1..5` y las variables del tema |
+| 8 | Sin scroll horizontal de página; tablas anchas scrollean dentro | ✅ tabla de 5 columnas: contenedor 356 px, tabla 598 px, scroll interno |
+| 9 | `build` y `lint` limpios | ✅ |
+| 10 | Revisión del usuario | ⏳ **pendiente** |
+
+### Streaming: cómo está montado
+
+`/api/query` responde JSON exactamente como antes; con `Accept: text/event-stream` responde SSE con
+los mismos campos, emitidos según existen (`sql` → `rows` → `answerDelta` → `done`). **El contrato de
+§5 no cambia**: el evento `done` lleva el payload completo de §5 y es la única fuente de verdad; lo
+anterior son adelantos y el cliente los reemplaza (importa si hubo reintento del modelo).
+
+El orden en pantalla es el orden de llegada —SQL, tabla, prosa, insights— a propósito: poner la
+respuesta redactada arriba obligaría a empujar la tabla hacia abajo al terminar el modelo, un salto
+de layout en cada pregunta que en móvil se nota mucho.
+
+`historySummary` se compone en cliente (`src/lib/chat/history.js`) con los 3 últimos turnos,
+incluyendo el SQL de cada uno: es el contexto más preciso que existe sobre qué se midió antes.
+
+### Latencia: la medida empeora, la percibida mejora
+
+El p50 del pipeline sube de 7,2 s a 9,1 s: el few-shot alarga el prompt (4.019 → 4.865 tokens de
+media) y el eval se ejecutó con el equipo ocupado, así que parte de la subida es ruido. Aun así, hay
+que mirarlo: **lo que se optimizó no es el total, es cuándo aparece el dato**. La cifra exacta está
+en pantalla a los ~3,9 s pase lo que pase después, y esa es la métrica que vive el usuario.
+
+Si el p50 sigue subiendo en la Fase 3, el primer sitio donde mirar es el tamaño del prompt.
+
+### Preguntas que hace la gente en la demo
+
+_Sin datos todavía: la demo aún no ha estado delante de nadie ajeno al proyecto._ El brief de la
+Fase 2 pide anotarlas aquí porque no se recuperan después y son la mejor fuente para afinar los
+prompts. Hoy no hay analítica de producto (no estaba en el alcance), así que la vía es leer los logs
+del servidor: cada query registra su pregunta cuando falla. Si se quiere el listado completo,
+conviene decidirlo antes de enseñar la demo a mucha gente.
+
+### Few-shot: qué arregló y qué destapó
+
+Se añadieron 2 ejemplos de consulta compuesta (CTE por concepto + join) al prompt de text-to-SQL.
+
+- **q24 (ventas × inventario) pasa a correcto.** Era uno de los 2 fallos heredados
+- **q27 (geografía × crecimiento) sigue fallando**, con el mismo `UNANSWERABLE`. Falla en seguro
+- **Destapó una colisión latente entre el prompt y el guard**: ver "Deuda y hallazgos"
+
+El eval se re-ejecutó entero (`npm run eval -- --full`) porque esta fase toca el prompt de
+text-to-SQL:
+
+| | Fase 1 | Fase 2 |
+|---|---|---|
+| Preguntas | 95,0% (38/40) | **97,5% (39/40)** |
+| Ataques | 100% (26/26) | **100% (26/26)** |
+| Fallos | q24, q27 | q27 |
+
+La primera pasada del eval con el few-shot dio 95% otra vez, pero **con los fallos cambiados**: q24
+arreglado y q35 roto por el choque `extract`/guard. Solo tras corregir el prompt quedó en 97,5%.
+Mirar únicamente el porcentaje habría escondido el intercambio.
 
 ## Fase 1 — cierre
 
@@ -187,6 +259,40 @@ _Añadido en la Fase 1:_
   `40935.32999999963` en vez de `40935.33`. Es exactamente la clase de error que rompe la promesa del
   producto; si alguien toca `inferType`, que no lo revierta
 
+_Añadido en la Fase 2:_
+
+- **El guard rechaza `EXTRACT(campo FROM columna)` y el prompt lo recomendaba.** El colector de
+  referencias del guard lee el `FROM` interno de `extract()` como una tabla y devuelve
+  `UNKNOWN_TABLE: created_at_platform`. Convivía sin verse porque el modelo casi siempre escribía
+  `to_char`/`date_trunc`; al cambiar el prompt con el few-shot, el modelo tiró de `extract` y q35
+  ("¿qué día de la semana vendo más?") empezó a fallar. **Arreglado en el prompt** (se recomienda
+  `date_part`, se prohíbe `extract`), no en el guard. El guard sigue teniendo el falso positivo:
+  falla en seguro —rechaza SQL válido, no acepta SQL peligroso—, pero conviene arreglarlo en la
+  revisión adversarial de la Fase 3, que ya toca ese fichero
+- **La prosa y la tabla usan separadores de miles distintos.** En español la tabla escribe
+  `14.284,85` y el modelo escribe `14,284.85`: mismo número, convención distinta. **Se intentó
+  arreglar por prompt y hubo que revertirlo**: cualquier regla sobre separadores en el prompt de
+  `summarize` —incluso redactada sin nombrar ningún idioma— hacía que respondiera en español a
+  preguntas en inglés, de forma reproducible (3/3 ejecuciones). El idioma de la respuesta importa
+  mucho más que la puntuación, así que se dejó el prompt como estaba. Si se retoma, el camino es
+  formatear fuera del modelo, no pedírselo a él
+- **El rate limit de la demo es por instancia, en memoria** (`src/lib/utils/rate-limit.js`, 30/hora
+  por IP). En serverless el tope efectivo se multiplica por el número de instancias calientes.
+  Frena el bucle accidental y el abuso casual, no un ataque distribuido. El límite compartido
+  (Upstash o equivalente) es Fase 8
+- **El CTA de la demo no lleva a un registro, porque todavía no existe** (auth es Fase 3). Apunta a
+  una sección `#connect` de la landing que explica qué viene ahora. En cuanto haya signup, es un
+  cambio de `href`
+- **El gráfico aparece con `done` (~7 s), no con la tabla (~3,5 s)**, porque el tipo de chart y sus
+  campos los decide el segundo LLM. Se podría inferir un chart provisional en cliente cuando hay una
+  dimensión y una métrica, y sustituirlo al llegar `done`; se descartó para no arriesgar un parpadeo
+  con un gráfico distinto al definitivo
+- **El seed llega hasta el 31 de julio de 2026 y "hoy" es agosto**, así que "¿cuánto he facturado
+  este mes?" responde correctamente que cero y parece que el producto está roto. Se resolvió en la
+  UI (el banner de `/demo` dice el rango real, leído de la base, y las sugerencias evitan "este
+  mes"). Si la demo se enseña dentro de unos meses, el problema crece: conviene que `db:seed`
+  genere datos relativos a la fecha de ejecución
+
 _Añadido por el PM al revisar la Fase 1:_
 
 - **`ARQUITECTURA.md` §5 documentaba `sessionId` y la ruta implementada lee `historySummary`.**
@@ -203,11 +309,12 @@ _Añadido por el PM al revisar la Fase 1:_
 
 | Métrica | Valor | Medido en |
 |---|---|---|
-| Acierto del eval de text-to-SQL | **95,0%** (38/40) | Fase 1 |
-| Ataques bloqueados | **100%** (26/26) | Fase 1 |
-| Latencia p50 / p95 por query | **7,2 s / 13,4 s** (pipeline completo) | Fase 1 |
-| Tokens medios por query | **4.019** | Fase 1 |
-| Coste real por query | ~$0,0008 (estimado desde tokens) | Fase 8 (medir en factura) |
+| Acierto del eval de text-to-SQL | **97,5%** (39/40) · era 95,0% | Fase 2 (con few-shot) |
+| Ataques bloqueados | **100%** (26/26) | Fase 2 (re-ejecutado) |
+| Latencia p50 / p95 por query | **9,1 s / 19,7 s** (pipeline completo) | Fase 2 |
+| Dato real en pantalla | **~3,9 s** (tabla), SQL a 3,6 s | Fase 2 (medido en el DOM) |
+| Tokens medios por query | **4.865** · era 4.019 | Fase 2 (el few-shot alarga el prompt) |
+| Coste real por query | ~$0,0010 (estimado desde tokens) | Fase 8 (medir en factura) |
 
 Reproducir: `npm run eval -- --full` y `npm run verify:manual`. La salida completa, con el SQL
 generado por cada pregunta, queda en `docs/eval/resultados/ultimo.json`.

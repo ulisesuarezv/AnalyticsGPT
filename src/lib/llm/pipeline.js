@@ -19,11 +19,21 @@ export const QUERY_ERROR_CODES = {
 };
 
 /**
- * @param {{ question: string, store: object, historySummary?: string, skipSummary?: boolean }} params
+ * @param {object} params
+ * @param {(event: { type: string, [k: string]: any }) => void} [params.onProgress]
+ *   Emite las piezas del resultado en cuanto existen —`sql` (~3,3 s), `rows`
+ *   (~3,5 s), `answerDelta` (~7 s)— para que la UI no espere al total.
+ *   Los eventos son informativos: el payload final sigue siendo la verdad.
  * @returns {Promise<{ ok: true, payload: object } | { ok: false, code: string, detail?: string, meta: object }>}
  */
-export async function runQueryPipeline({ question, store, historySummary, skipSummary = false }) {
+export async function runQueryPipeline({
+  question, store, historySummary, skipSummary = false, onProgress,
+}) {
   const startedAt = Date.now();
+  const emit = (event) => {
+    // Un fallo pintando el progreso nunca puede tumbar la query.
+    try { onProgress?.(event); } catch { /* ignorado a propósito */ }
+  };
 
   const catalog = await getCatalog(store.id);
   const { schema, sampleRows } = formatCatalogForPrompt(catalog);
@@ -35,7 +45,19 @@ export async function runQueryPipeline({ question, store, historySummary, skipSu
     sampleRows,
     historySummary,
     validate: (sql) => validateSql(sql, { dialect: 'postgres' }),
-    execute: (sql) => runScopedQuery({ storeId: store.id, sql }),
+    execute: async (sql) => {
+      // Ya pasó el guard y va a ejecutarse: es SQL real, se puede enseñar. Si
+      // falla y hay reintento, llega otro evento `sql` que sustituye a este.
+      emit({ type: 'sql', sql });
+      const result = await runScopedQuery({ storeId: store.id, sql });
+      emit({
+        type: 'rows',
+        rows: result.rows,
+        rowCount: result.rowCount,
+        truncated: result.truncated,
+      });
+      return result;
+    },
   });
 
   const baseMeta = {
@@ -92,6 +114,7 @@ export async function runQueryPipeline({ question, store, historySummary, skipSu
       rowCount: result.rowCount,
       truncated: result.truncated,
       store,
+      onAnswerDelta: onProgress ? (delta) => emit({ type: 'answerDelta', delta }) : undefined,
     });
     summary = summarized.summary;
     summaryTokens = summarized.tokens;

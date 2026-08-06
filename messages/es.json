@@ -15,7 +15,72 @@
     "subtitle": "Respuestas exactas, no aproximaciones. Cada número sale de una consulta real contra tus propios datos — nunca de una suposición.",
     "ctaPrimary": "Probar la demo",
     "ctaSecondary": "Ver precios",
-    "status": "Fase 0 — fundaciones listas. El pipeline de chat llega en la Fase 1."
+    "status": "Fase 2 — demo pública. Conexión de tienda y cuentas es lo siguiente."
+  },
+  "Landing": {
+    "navDemo": "Demo en vivo",
+    "ctaNote": "Sin registro. Datos reales de una tienda de ejemplo.",
+    "exampleChrome": "Ejemplo real",
+    "exampleQuestion": "¿Qué productos se vendieron más en los últimos 30 días?",
+    "exampleSqlShow": "Ver la consulta que produjo esto",
+    "exampleSqlHide": "Ocultar la consulta",
+    "exampleAnswer": "En los últimos 30 días, el producto más vendido fue el «Marble Bath Mat» con 26 unidades, seguido de cerca por el «Stone Quilted Bedspread» con 25 unidades y el «Marble Bath Towel Set» con 24. También destacan el «Brass Wall Art Print» con 19 unidades y el «Bamboo Picture Frame» con 18.",
+    "exampleFootnote": "Salida real de la tienda demo, no un mockup. Cada cifra sale de la consulta de arriba.",
+    "props": {
+      "exact": {
+        "title": "Los cálculos los hace la base de datos",
+        "body": "El modelo escribe la consulta; PostgreSQL calcula el número. La respuesta se redacta sobre el resultado real, así que no queda nada que alucinar."
+      },
+      "proof": {
+        "title": "Cada respuesta enseña su consulta",
+        "body": "El SQL ejecutado está a un clic en cada respuesta. No hace falta que nos creas: puedes leer exactamente qué se ha medido."
+      },
+      "insights": {
+        "title": "Sigue tirando del hilo",
+        "body": "Cada respuesta viene con cosas que no preguntaste: tendencias, anomalías, oportunidades. Pulsa una y se convierte en tu siguiente pregunta."
+      }
+    },
+    "connect": {
+      "title": "Tu tienda, lo siguiente",
+      "body": "La demo corre sobre una tienda de ejemplo para que puedas probarla sin registrarte. Conectar la tuya —sincronización con Shopify y subida de CSV— es lo que estamos construyendo ahora.",
+      "cta": "Prueba antes la demo"
+    }
+  },
+  "Demo": {
+    "metaTitle": "Demo en vivo — pregunta a las ventas de una tienda real",
+    "metaDescription": "Haz preguntas en lenguaje natural sobre un conjunto de datos de ecommerce real. Números exactos, el SQL que los produce y gráficos. Sin registro.",
+    "banner": "Tienda demo: {store} · pedidos reales de {period}. Pregúntale lo que quieras sobre sus ventas.",
+    "bannerFallback": "Tienda demo con datos de ventas reales. Pregúntale lo que quieras.",
+    "ctaTitle": "Esta es una tienda de ejemplo. La interesante es la tuya.",
+    "ctaBody": "Sigue preguntando lo que quieras, aquí no se bloquea nada. Cuando esté lista la conexión de tienda, estas mismas respuestas correrán sobre tus ventas.",
+    "ctaButton": "Ver qué viene ahora"
+  },
+  "Chat": {
+    "placeholder": "Pregunta por ventas, productos, clientes…",
+    "send": "Enviar",
+    "stop": "Parar",
+    "disclaimer": "Los números salen de una consulta SQL contra los datos. Abre la consulta para comprobar cualquier respuesta.",
+    "suggestionsTitle": "Prueba a preguntar",
+    "suggestions": {
+      "revenue": "¿Cuánto facturé el mes pasado?",
+      "topProducts": "¿Cuáles son mis 5 productos más vendidos?",
+      "trend": "Enséñame la facturación por semana de los últimos 3 meses",
+      "repeatCustomers": "¿Cuántos clientes han comprado más de una vez?",
+      "geography": "¿De qué países vienen mis pedidos?",
+      "lowStock": "¿Qué productos más vendidos se están quedando sin stock?"
+    },
+    "stageWritingSql": "Escribiendo la consulta…",
+    "stageRunning": "Consultando tus datos…",
+    "stageSummarizing": "Redactando la respuesta…",
+    "sqlToggle": "Consulta ejecutada",
+    "copySql": "Copiar el SQL",
+    "rowCount": "{count, plural, one {# fila} other {# filas}}",
+    "rowsShown": "Mostrando {shown} de {total} filas — el CSV las lleva todas",
+    "truncated": "resultado limitado a 1.000 filas",
+    "exportCsv": "CSV",
+    "exportPng": "PNG",
+    "insightsTitle": "También te puede interesar",
+    "genericError": "Algo ha fallado por nuestra parte. Inténtalo de nuevo en un momento."
   },
   "Common": {
     "loading": "Cargando…",
