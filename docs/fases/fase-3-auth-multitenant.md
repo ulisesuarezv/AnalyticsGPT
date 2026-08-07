@@ -26,6 +26,25 @@ El schema y las vistas ya existen desde la Fase 1; aquí se conecta la identidad
 - Rutas protegidas; `/demo` sigue siendo pública
 - Verificar que las policies RLS de la Fase 1 funcionan de verdad con usuarios reales
 
+### Rol `app_reader`: sacar la credencial de superusuario del runtime
+
+Decisión del PM, tomada al configurar Vercel. Hoy `src/lib/db/stores.js` y `src/lib/sql/catalog.js`
+leen `DATABASE_URL_ADMIN` **en cada request**, así que la función pública tiene en su entorno una
+credencial que puede hacer cualquier cosa contra la base. Los motivos son legítimos —`stores` no está
+en ninguna vista a propósito porque contiene `access_token`, y el catálogo necesita los `COMMENT` del
+schema, que `query_runner` no ve— pero el radio de daño de cualquier fallo en esa función pasa de
+"leer una vista" a "todo".
+
+`ARQUITECTURA.md` §3 sigue cumpliéndose (el SQL del LLM solo corre por `query_runner`), pero la
+promesa implícita de que la app no tiene poderes de admin, no.
+
+- Crear el rol `app_reader`: `SELECT` sobre `stores` (sin `access_token`) y sobre los metadatos del
+  catálogo. Nada más
+- `stores.js` y `catalog.js` pasan a usar `DATABASE_URL_APP`
+- `DATABASE_URL_ADMIN` queda como lo que debería ser: credencial de migración, solo en local y en
+  `scripts/`. **Quitarla del proyecto de Vercel** cuando esté hecho
+- Actualizar `.env.local.example` y la tabla de env vars de `ESTADO.md`
+
 ### Migración `002`: ingresos netos de devoluciones
 
 Decisión del PM, tomada tras la Fase 1. Hoy los pedidos `partially_refunded` cuentan su importe
@@ -65,6 +84,19 @@ vistas, tiene que intentar romper el aislamiento con vectores nuevos. No vale vo
 Lo que encuentre se añade a `ataques.json` y se arregla antes de cerrar. Carga la skill
 `/security-review` para esa pasada.
 
+### Dos arreglos heredados que caen aquí por proximidad
+
+Ninguno es de esta fase, pero los dos tocan ficheros que esta fase ya abre. Hacerlos aparte sale más
+caro.
+
+- **`db:seed` debe generar fechas relativas a la ejecución.** Hoy el dataset acaba el 31 de julio de
+  2026 y "hoy" avanza solo: la Fase 2 lo tapó en la UI con un banner, pero dentro de tres meses "los
+  últimos 30 días" estará vacío y la demo se romperá sola delante de un desconocido. La migración
+  `002` ya toca el seed
+- **El guard rechaza `EXTRACT(campo FROM columna)`,** que es SQL válido. Falla en seguro, así que no es
+  un agujero, pero la revisión adversarial ya abre `guard.js`: es el momento barato. Que el arreglo
+  venga con su test, y que el suite entero siga en verde
+
 ## Criterio de aceptación
 
 1. **Test de aislamiento explícito y automatizado**: dos usuarios con datos distintos; ninguna ruta,
@@ -76,7 +108,8 @@ Lo que encuentre se añade a `ataques.json` y se arregla antes de cerrar. Carga 
 4. La sesión sobrevive a un refresh y a la expiración del token
 5. El historial persiste y se puede retomar una conversación anterior; el resumen que se manda como
    `historySummary` a `/api/query` se compone en servidor desde `messages`
-6. `npm run build` y `npm run lint` limpios
+6. **`DATABASE_URL_ADMIN` ya no está en el proyecto de Vercel** y la app funciona sin ella
+7. `npm run build` y `npm run lint` limpios
 
 ## Qué NO hacer
 
