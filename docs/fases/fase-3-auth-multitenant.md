@@ -84,6 +84,14 @@ vistas, tiene que intentar romper el aislamiento con vectores nuevos. No vale vo
 Lo que encuentre se añade a `ataques.json` y se arregla antes de cerrar. Carga la skill
 `/security-review` para esa pasada.
 
+### Registro de preguntas de la demo
+
+Decisión del PM tras la Fase 2. Tabla `demo_queries` en Supabase: pregunta, locale, si funcionó,
+latencia, timestamp. Sin PII, sin auth, escrita desde `/api/query` cuando `source: "demo"`.
+
+Es la única forma de saber **qué pregunta la gente**, que es lo que afina los prompts y descubre qué
+producto quiere el mercado. Los logs de Vercel no sirven: retención corta y solo registran los fallos.
+
 ### Dos arreglos heredados que caen aquí por proximidad
 
 Ninguno es de esta fase, pero los dos tocan ficheros que esta fase ya abre. Hacerlos aparte sale más

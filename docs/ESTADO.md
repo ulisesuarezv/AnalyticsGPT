@@ -226,6 +226,25 @@ Las estructurales están en `docs/ARQUITECTURA.md` §8. Resumen de las que afect
 8. **El schema de Supabase se crea en la Fase 1**, no en la 3 — la Fase 1 necesita tablas contra las
    que ejecutar. La Fase 3 añade la identidad encima. (Ajuste sobre el plan original)
 
+## Decisiones del PM tras la Fase 2
+
+Tomadas el 7 agosto 2026, sobre los tres huecos que señaló el cierre de la Fase 2.
+
+1. **La demo circula solo entre gente de confianza, de momento.** Eso desactiva las dos urgencias:
+   sin captura de email (con cinco personas el feedback llega hablando) y sin limitador compartido (el
+   rate limit por instancia sobra para ese volumen). **Ambas cosas vuelven a ser obligatorias en cuanto
+   el link salga a redes o comunidades** — la de email antes de compartir, porque si no gastas tráfico
+   sin quedarte lista de lanzamiento
+
+2. **Registrar las preguntas de la demo: sí, pero en la Fase 3, no antes.** Con audiencia reducida deja
+   de ser irrecuperable, así que no bloquea el hito. Una tabla en Supabase con pregunta, locale, si
+   funcionó y latencia; sin PII y sin auth. Los logs de Vercel no valen: retención corta y solo guardan
+   los fallos. Lo que se pierde sin esto es *qué preguntó la gente*, que es lo que afina los prompts
+
+3. **La demo pasa a `main` para tener URL estable** (`analytics-gpt.vercel.app`), después de la revisión
+   del usuario. Hay que **desactivar Deployment Protection en producción**: con ella puesta, un
+   desconocido ve un login de Vercel en vez de la demo
+
 ## Decisiones del PM tras la Fase 1
 
 Tomadas el 6 agosto 2026 revisando el cierre de la Fase 1. Ya están aplicadas en los briefs.
